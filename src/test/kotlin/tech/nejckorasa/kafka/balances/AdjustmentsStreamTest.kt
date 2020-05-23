@@ -18,8 +18,10 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import tech.nejckorasa.kafka.balances.KafkaConfig.REJECTED_TOPIC
 import tech.nejckorasa.kafka.balances.model.AdjustBalance
-import tech.nejckorasa.kafka.balances.model.BalanceAdjusted
+import tech.nejckorasa.kafka.balances.model.BalanceAdjustmentAccepted
+import tech.nejckorasa.kafka.balances.model.BalanceAdjustmentRejected
 import java.util.*
 
 @TestInstance(PER_CLASS)
@@ -29,7 +31,8 @@ class BalancesStreamTest {
     private lateinit var topology: TopologyTestDriver
 
     private val sourceSerde = jsonSerde<AdjustBalance>()
-    private val sinkSerde = jsonSerde<BalanceAdjusted>()
+    private val sinkSerde = jsonSerde<BalanceAdjustmentAccepted>()
+    private val rejectedSinkSerde = jsonSerde<BalanceAdjustmentRejected>()
 
     @BeforeAll
     fun init() {
@@ -45,29 +48,51 @@ class BalancesStreamTest {
     fun teardown() = topology.close()
 
     @Test
-    fun `Balance is updated`() {
+    fun `Balances are updated`() {
         val accountId1 = "account_1"
 
-        sendAdjustBalance(AdjustBalance(accountId1, +10))
-        assertReceived(BalanceAdjusted(accountId1, +10, +10))
+        sendAdjustBalance(AdjustBalance(accountId1, adjustedAmount = +10))
+        assertReceived(BalanceAdjustmentAccepted(accountId1, balance = +10, adjustedAmount = +10))
 
-        sendAdjustBalance(AdjustBalance(accountId1, +30))
-        assertReceived(BalanceAdjusted(accountId1, +40, +30))
-
-        sendAdjustBalance(AdjustBalance(accountId1, -50))
-        assertReceived(BalanceAdjusted(accountId1, -10, -50))
+        sendAdjustBalance(AdjustBalance(accountId1, adjustedAmount = +30))
+        assertReceived(BalanceAdjustmentAccepted(accountId1, balance = +40, adjustedAmount = +30))
     }
 
-    private fun assertReceived(ba: BalanceAdjusted) {
+    @Test
+    fun `Overdrafts are rejected`() {
+        val accountId1 = "account_2"
+
+        sendAdjustBalance(AdjustBalance(accountId1, adjustedAmount = +40))
+        assertReceived(BalanceAdjustmentAccepted(accountId1, balance = +40, adjustedAmount = +40))
+
+        sendAdjustBalance(AdjustBalance(accountId1, adjustedAmount = -50))
+        assertReceivedRejected(BalanceAdjustmentRejected(accountId1, adjustedAmount = -50, reason = "Insufficient funds"))
+
+        sendAdjustBalance(AdjustBalance(accountId1, adjustedAmount = -40))
+        assertReceived(BalanceAdjustmentAccepted(accountId1, balance = +0, adjustedAmount = -40))
+
+    }
+
+    private fun assertReceived(ba: BalanceAdjustmentAccepted) {
         with(readOutput()!!) {
-            assertEquals(key(), ba.accountId)
-            assertEquals(value(), ba)
+            assertEquals(ba.accountId, key())
+            assertEquals(ba, value())
+        }
+    }
+
+    private fun assertReceivedRejected(ba: BalanceAdjustmentRejected) {
+        with(readRejectedOutput()!!) {
+            assertEquals(ba.accountId, key())
+            assertEquals(ba, value())
         }
     }
 
     private fun sendAdjustBalance(ba: AdjustBalance) =
         topology.pipeInput(factory.create(INPUT_TOPIC, ba.accountId, ba))
 
-    private fun readOutput(): ProducerRecord<String, BalanceAdjusted>? =
+    private fun readOutput(): ProducerRecord<String, BalanceAdjustmentAccepted>? =
         topology.readOutput(OUTPUT_TOPIC, StringDeserializer(), sinkSerde.deserializer())
+
+    private fun readRejectedOutput(): ProducerRecord<String, BalanceAdjustmentRejected>? =
+        topology.readOutput(REJECTED_TOPIC, StringDeserializer(), rejectedSinkSerde.deserializer())
 }
