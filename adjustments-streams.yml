@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  adjustments-streams:
+    build: .
+    hostname: adjustments-streams
+    container_name: adjustments-streams
+    depends_on:
+      - kafka-setup
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092

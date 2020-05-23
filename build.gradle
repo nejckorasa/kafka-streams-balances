@@ -1,0 +1,44 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.3.41'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        url = "https://packages.confluent.io/maven"
+    }
+}
+
+group 'kafka-streams-balances'
+version '1.0'
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+"
+
+    implementation "org.slf4j:slf4j-api:1.7.30"
+    implementation "ch.qos.logback:logback-core:1.3.0-alpha5"
+    implementation "ch.qos.logback:logback-classic:1.3.0-alpha5"
+
+    implementation group: "org.apache.kafka", name: "kafka-streams", version: "2.3.0"
+
+    testImplementation "org.apache.kafka:kafka-streams-test-utils:2.3.0"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.5.1"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.5.1"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    baseName = "adjustments-streams"
+    classifier = ""
+    archiveVersion = ""
+}
+
+mainClassName = "tech.nejckorasa.kafka.balances.AdjustmentsStreamsApp"
