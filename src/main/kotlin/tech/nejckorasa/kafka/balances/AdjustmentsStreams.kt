@@ -70,10 +70,7 @@ object AdjustmentsStreams {
                     this.store = context.getStateStore(BALANCES_STORE) as KeyValueStore<AccountId, Amount>
                 }
 
-                override fun transform(
-                    key: AccountId,
-                    value: AdjustBalance
-                ): KeyValue<AccountId, BalanceAdjustment>? {
+                override fun transform(key: AccountId, value: AdjustBalance): KeyValue<AccountId, BalanceAdjustment>? {
                     val existingBalance: Amount? = store.get(key)
                     val newBalance = (existingBalance ?: 0) + value.adjustedAmount
 

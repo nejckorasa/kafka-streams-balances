@@ -34,7 +34,7 @@ object AdjustmentsStreamsApp {
                 while (true) {
                     val ab = AdjustBalance(
                         accountId = "${Random.nextInt(10)}",
-                        adjustedAmount = Random.nextLong(-2, 10) * 10
+                        adjustedAmount = Random.nextLong(-5, 10) * 10
                     )
                     send(ProducerRecord(KafkaConfig.INPUT_TOPIC, ab.accountId, ab)).get()
                     Thread.sleep(1000)

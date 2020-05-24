@@ -44,9 +44,9 @@ services:
     image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
     hostname: kafka-setup
     volumes:
-      - ./topics:/scripts
+      - ./topics:/topics
     container_name: kafka-setup
-    command: sh /scripts/create-topics.sh
+    command: sh /topics/create_topics.sh
 
 volumes:
   kafka-v-data:
