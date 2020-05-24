@@ -1,0 +1,23 @@
+@startuml
+start
+partition Source {
+    :Read from ""adjust-balance"";
+}
+partition Transformer {
+    if ( \nEnough funds in the account?\n ) then (yes)
+        :**Accept** balance adjustment;
+        :Update ""balance-store"" state store;
+    else (no)
+        :**Reject** balance adjustment;
+    endif
+}
+partition Sink {
+    if ( \nBalance adjustment accepted?\n ) then (yes)
+        :Write to ""balance-adjustment"";
+        detach
+    else (no)
+         :Write to ""balance-adjustment-rejected"";
+         detach
+    endif
+}
+@enduml
