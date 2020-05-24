@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/nejckorasa/kafka-streams-balances.svg?branch=master)](https://travis-ci.org/nejckorasa/kafka-streams-balances)
+
 # Kafka Streams example app
 
 Example app to demonstrate Kafka Streams with Kotlin. 
